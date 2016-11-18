@@ -5,6 +5,10 @@
 */
 #include"AirQuality.h"
 #include"Arduino.h"
+#include <Ethernet.h>
+#include <SPI.h>
+#include "RestClient.h"
+
 AirQuality airqualitysensor;
 int current_quality =-1;
 
@@ -16,6 +20,9 @@ unsigned long sampletime_ms = 30000;//sampe 30s
 unsigned long lowpulseoccupancy = 0;
 float ratio = 0;
 float concentration = 0;
+
+// REST-Client
+RestClient client = RestClient("192.168.0.10", 8080);
 
 void setup()
 {
@@ -52,8 +59,18 @@ void loop()
       Serial.print("concentration = ");
       Serial.print(concentration);
       Serial.println(" pcs/0.01cf");
-      Serial.println("\n");
       lowpulseoccupancy = 0;
+      
+      // Post Event to Backend:
+      String response = "";
+      char buf[30];
+      const char* body = dtostrf(concentration, 6, 2, buf);
+      int statusCode = client.post("/api/measurements/dust", body, &response);
+      Serial.print(statusCode);
+      Serial.print(" : ");
+      Serial.println(response);
+      Serial.println("\n");
+      
       starttime = millis();
     }
 }
